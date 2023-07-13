@@ -21,6 +21,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "To-Do List"
+        getAllItems()
         view.addSubview(tableView)
         tableView.delegate = self
         tableView.dataSource = self
@@ -53,7 +54,42 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
     
     
-    // Core Data
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        let item = models[indexPath.row]
+        
+        let actionSheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        
+        
+        actionSheet.addAction(UIAlertAction(title: "Edit", style: .default, handler: { _ in
+            let alert = UIAlertController(title: "Edit Item", message: "Enter your item", preferredStyle: .alert)
+            alert.addTextField(configurationHandler: { textField in
+                textField.text = item.name
+            })
+            
+            alert.addAction(UIAlertAction(title: "Save", style: .default, handler: { [weak self] _ in
+                if let textField = alert.textFields?.first, let newName = textField.text, !newName.isEmpty {
+                    self?.updateItem(item: item, newName: newName)
+                }
+            }))
+            
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+            
+            self.present(alert, animated: true)
+        }))
+        
+      
+        actionSheet.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: { [weak self] _ in
+            self?.deleteItem(item: item)
+        }))
+        
+        
+        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        
+        present(actionSheet, animated: true)
+    }
+    
+    // MARK: Core Data
     func getAllItems() {
         do {
             models = try context.fetch(ToDoListItem.fetchRequest())
@@ -64,7 +100,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             print("error")
         }
     }
-
+    
     func createItem(name: String){
         let newItem = ToDoListItem(context: context)
         newItem.name = name
@@ -81,9 +117,10 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     
     func deleteItem(item: ToDoListItem) {
         context.delete(item)
-        
+       
         do {
             try context.save()
+            getAllItems()
         } catch {
             // error
         }
@@ -93,6 +130,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         item.name = newName
         do {
             try context.save()
+            getAllItems()
         } catch {
             // error
         }
